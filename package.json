@@ -4,20 +4,32 @@
   "description": "Quest Bot Auto Claim",
   "main": "src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "npm run typecheck && npm run lint && npm test",
     "start": "tsx --env-file=.env src/index.ts",
-    "dev": "tsx src/index.ts"
+    "dev": "tsx src/index.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "keywords": [],
-  "author": "kito",
-  "license": "ISC",
+  "author": "NirussVn0",
+  "license": "GPL-3.0",
   "type": "commonjs",
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^20.10.0",
+    "eslint": "^10.5.0",
+    "prettier": "^3.8.4",
     "tsx": "^4.22.3",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.62.0",
+    "vitest": "^4.1.9"
   },
   "dependencies": {
     "@discordjs/core": "^1.1.1",

@@ -23,7 +23,9 @@ TOKEN=your_discord_token
 ```
 
 ## 🚀 Run
+
 Run
+
 ```bash
 npm start
 ```
