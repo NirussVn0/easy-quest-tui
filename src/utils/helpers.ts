@@ -48,8 +48,7 @@ export function getQuestData(quest: Quest): {
       remaining = Math.max(0, target - progress);
     }
   } else {
-    remaining = -1;
-    reward = 'Unsupported';
+    return { name, remaining: -1, reward: 'Unsupported' };
   }
 
   const rewards = quest.config?.rewards_config?.rewards;
