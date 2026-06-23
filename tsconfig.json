@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "es2022",
-    "module": "commonjs",
+    "module": "ESNext",
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
@@ -9,7 +9,8 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
     "baseUrl": "./src",
     "paths": {
       "@types/*": ["types/*"],

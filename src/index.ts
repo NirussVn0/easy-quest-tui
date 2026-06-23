@@ -1,8 +1,7 @@
 import { GatewayDispatchEvents } from 'discord-api-types/v9';
 import chalk from 'chalk';
-import logUpdate from 'log-update';
 import { ClientQuest } from './services/api.service';
-import { renderScreen } from './ui/cli.ui';
+import { createDashboardRenderer } from './ui/dashboard';
 import { getQuestData } from './utils/helpers';
 import { ActiveQuest, UserInfo } from './types/quest.types';
 
@@ -28,20 +27,20 @@ client.websocketManager.on('closed', ({ code }) => {
   }
 });
 
-logUpdate(chalk.cyan('⏳ Connecting to Discord gateway...'));
+console.log(chalk.cyan('⏳ Connecting to Discord gateway...'));
 
 client.once(
   GatewayDispatchEvents.Ready,
   async ({ data }: { data: { user: UserInfo } }) => {
     isReady = true;
-    logUpdate(chalk.cyan('⏳ Fetching quests...'));
+    console.log(chalk.cyan('⏳ Fetching quests...'));
     await client.fetchQuests();
 
     const manager = client.questManager;
     const validQuests = manager?.filterQuestsValid() ?? [];
 
     if (validQuests.length === 0) {
-      logUpdate(chalk.red('\u274c No valid quests found.'));
+      console.log(chalk.red('\u274c No valid quests found.'));
       process.exit(0);
     }
 
@@ -61,9 +60,16 @@ client.once(
       .filter((q): q is ActiveQuest => q !== null);
 
     if (activeQuests.length === 0) {
-      logUpdate(chalk.yellow('⚠️ No supported active quests found.'));
+      console.log(chalk.yellow('⚠️ No supported active quests found.'));
       process.exit(0);
     }
+
+    const startedAt = new Date();
+    const dashboard = createDashboardRenderer({
+      user: data.user,
+      quests: [...activeQuests],
+      startedAt,
+    });
 
     const intervalId = setInterval(() => {
       activeQuests.forEach((quest) => {
@@ -71,7 +77,11 @@ client.once(
           quest.remaining--;
         }
       });
-      renderScreen(data.user, activeQuests);
+      dashboard.update({
+        user: data.user,
+        quests: [...activeQuests],
+        startedAt,
+      });
     }, 1000);
 
     await Promise.allSettled(
@@ -90,7 +100,12 @@ client.once(
     );
 
     clearInterval(intervalId);
-    renderScreen(data.user, activeQuests);
+    dashboard.update({
+      user: data.user,
+      quests: [...activeQuests],
+      startedAt,
+    });
+    dashboard.stop();
 
     process.exit(0);
   },
