@@ -111,6 +111,7 @@ export class DiscordClient {
 
   /** Disconnect from gateway */
   async disconnect(): Promise<void> {
+    sessionRegistry.delete(this.token);
     try {
       await this.gateway.destroy({ code: 1000, reason: 'Shutdown' });
     } catch {
