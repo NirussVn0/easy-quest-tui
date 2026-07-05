@@ -266,9 +266,12 @@ function TextInput({
       onChange(value.slice(0, -1));
       return;
     }
-    // Only accept printable ASCII characters
-    if (input && input.length === 1 && input >= ' ' && input <= '~') {
-      onChange(value + input);
+    // Accept printable ASCII characters (supports single keypresses and pasted text chunks)
+    if (input) {
+      const printable = [...input].filter((char) => char >= ' ' && char <= '~').join('');
+      if (printable.length > 0) {
+        onChange(value + printable);
+      }
     }
   });
 

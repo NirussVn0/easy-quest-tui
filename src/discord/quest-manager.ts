@@ -148,7 +148,8 @@ export async function executeQuest(deps: ExecutorDeps): Promise<QuestResult> {
     }
 
     // 2. Detect task type
-    const taskConfig = (quest.config?.task_config ?? (quest.config as any)?.task_config_v2) as
+    const taskConfig = (quest.config?.task_config ??
+      (quest.config as any)?.task_config_v2) as
       | { tasks?: Partial<Record<QuestTaskType, QuestTask>> }
       | undefined;
 
