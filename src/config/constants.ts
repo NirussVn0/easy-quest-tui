@@ -18,7 +18,7 @@ export const CLIENT_PROFILES = [
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9215 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36',
     browser_version: '37.6.0',
     os_sdk_version: '19045',
-    client_build_number: 371091,
+    client_build_number: 573410,
     native_build_number: 72186,
   },
   {
@@ -34,7 +34,7 @@ export const CLIENT_PROFILES = [
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9216 Chrome/138.0.7204.321 Electron/37.6.0 Safari/537.36',
     browser_version: '37.6.0',
     os_sdk_version: '22621',
-    client_build_number: 372045,
+    client_build_number: 573410,
     native_build_number: 72201,
   },
   {
@@ -50,7 +50,7 @@ export const CLIENT_PROFILES = [
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9214 Chrome/137.0.7204.188 Electron/37.5.0 Safari/537.36',
     browser_version: '37.5.0',
     os_sdk_version: '19045',
-    client_build_number: 370128,
+    client_build_number: 573410,
     native_build_number: 72145,
   },
 ];
