@@ -130,6 +130,7 @@ dist
 
 # Token files (DON'T COMMIT YOUR TOKENS)
 tokens.txt
+proxies.txt
 
 # yarn v2
 .yarn/cache
