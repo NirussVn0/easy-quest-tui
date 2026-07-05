@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, appendFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 export interface AccountConfig {
@@ -126,4 +126,10 @@ export function readConfig(): AppConfig {
     concurrency,
     tokensFile,
   };
+}
+
+export function saveAccount(filePath: string, token: string, proxy?: string): void {
+  const resolved = resolve(filePath);
+  const line = proxy ? `${token}|${proxy}\n` : `${token}\n`;
+  appendFileSync(resolved, line, 'utf-8');
 }

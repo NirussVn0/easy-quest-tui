@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Text } from 'ink';
+import React, { useState, useEffect } from 'react';
+import { Box, Text, useInput } from 'ink';
 import type {
   AccountState,
   QuestProgress,
@@ -7,7 +7,9 @@ import type {
   QuestStatus,
   AccountStatus,
 } from '../types/index';
-import { formatTime } from '../utils/helpers';
+import { formatTime, maskProxy } from '../utils/helpers';
+import { readConfig, saveAccount } from '../config/env';
+import { Orchestrator } from '../core/orchestrator';
 
 // ─── Colour / Label helpers ───────────────────────────────────────────────────
 
@@ -106,7 +108,13 @@ function QuestRow({ quest }: { quest: QuestProgress }) {
 
 // ─── Account Card ─────────────────────────────────────────────────────────────
 
-function AccountCard({ account }: { account: AccountState }) {
+function AccountCard({
+  account,
+  selected,
+}: {
+  account: AccountState;
+  selected: boolean;
+}) {
   const elapsed = Math.max(
     0,
     Math.floor((Date.now() - account.startedAt.getTime()) / 1000),
@@ -115,8 +123,8 @@ function AccountCard({ account }: { account: AccountState }) {
   return (
     <Box
       flexDirection="column"
-      borderStyle="round"
-      borderColor={accountStatusColor(account.status)}
+      borderStyle={selected ? 'double' : 'round'}
+      borderColor={selected ? 'cyan' : accountStatusColor(account.status)}
       paddingX={1}
       paddingY={0}
       marginBottom={0}
@@ -124,8 +132,8 @@ function AccountCard({ account }: { account: AccountState }) {
       {/* Header row */}
       <Box justifyContent="space-between">
         <Box>
-          <Text bold color="cyanBright">
-            #{account.index + 1}
+          <Text bold color={selected ? 'cyanBright' : 'cyan'}>
+            {selected ? '▶ ' : '  '}#{account.index + 1}
           </Text>
           <Text> </Text>
           <Text color="greenBright">{account.username}</Text>
@@ -228,19 +236,342 @@ function SummaryBanner({ summary }: { summary: FarmSummary }) {
   );
 }
 
-// ─── Footer ───────────────────────────────────────────────────────────────────
+// ─── Text Input ───────────────────────────────────────────────────────────────
 
-function Footer() {
+interface TextInputProps {
+  value: string;
+  onChange: (val: string) => void;
+  onSubmit: () => void;
+  placeholder?: string;
+  isActive: boolean;
+  mask?: boolean;
+}
+
+function TextInput({
+  value,
+  onChange,
+  onSubmit,
+  placeholder = '',
+  isActive,
+  mask = false,
+}: TextInputProps) {
+  useInput((input, key) => {
+    if (!isActive) return;
+
+    if (key.return) {
+      onSubmit();
+      return;
+    }
+    if (key.backspace || key.delete) {
+      onChange(value.slice(0, -1));
+      return;
+    }
+    // Only accept printable ASCII characters
+    if (input && input.length === 1 && input >= ' ' && input <= '~') {
+      onChange(value + input);
+    }
+  });
+
+  const displayValue = mask ? '*'.repeat(value.length) : value;
+
   return (
-    <Box marginTop={0}>
-      <Text dimColor>Press Ctrl+C to stop • Auto-farming Discord Quests</Text>
+    <Box>
+      {value.length === 0 ? (
+        <Text dimColor>{placeholder}</Text>
+      ) : (
+        <Text color={isActive ? 'cyanBright' : 'white'}>{displayValue}</Text>
+      )}
+      {isActive && (
+        <Text color="cyan" bold>
+          |
+        </Text>
+      )}
     </Box>
   );
 }
 
 // ─── Main App ─────────────────────────────────────────────────────────────────
 
-export function App({ accounts }: { accounts: AccountState[] }) {
+export function App() {
+  const [screen, setScreen] = useState<
+    'menu' | 'add_token' | 'view_accounts' | 'farming'
+  >('menu');
+  const [config, setConfig] = useState(() => {
+    try {
+      return readConfig();
+    } catch {
+      return { accounts: [], concurrency: 3, tokensFile: 'tokens.txt' };
+    }
+  });
+  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
+  const [accounts, setAccounts] = useState<AccountState[]>([]);
+  const [selectedAccountIndex, setSelectedAccountIndex] = useState<number>(0);
+
+  // Add Token state
+  const [tokenInput, setTokenInput] = useState('');
+  const [proxyInput, setProxyInput] = useState('');
+  const [activeInputField, setActiveInputField] = useState<'token' | 'proxy'>('token');
+  const [addTokenStatus, setAddTokenStatus] = useState('');
+
+  // Handle global Menu keys
+  useInput((input, key) => {
+    if (screen !== 'menu') return;
+
+    if (key.upArrow) {
+      setSelectedMenuIndex((prev) => (prev > 0 ? prev - 1 : 3));
+    } else if (key.downArrow) {
+      setSelectedMenuIndex((prev) => (prev < 3 ? prev + 1 : 0));
+    } else if (key.return) {
+      if (selectedMenuIndex === 0) {
+        setAccounts([]);
+        setSelectedAccountIndex(0);
+        setScreen('farming');
+      } else if (selectedMenuIndex === 1) {
+        setTokenInput('');
+        setProxyInput('');
+        setActiveInputField('token');
+        setAddTokenStatus('');
+        setScreen('add_token');
+      } else if (selectedMenuIndex === 2) {
+        setScreen('view_accounts');
+      } else if (selectedMenuIndex === 3) {
+        process.exit(0);
+      }
+    }
+  });
+
+  // Handle global View Accounts keys
+  useInput((input, key) => {
+    if (screen !== 'view_accounts') return;
+
+    if (key.escape || input === 'q') {
+      setScreen('menu');
+    }
+  });
+
+  // Handle global Add Token keys
+  useInput((input, key) => {
+    if (screen !== 'add_token') return;
+
+    if (key.escape) {
+      setScreen('menu');
+      return;
+    }
+
+    if (key.tab || key.downArrow || key.upArrow) {
+      setActiveInputField((prev) => (prev === 'token' ? 'proxy' : 'token'));
+    }
+  });
+
+  // Handle global Farming keys
+  useInput((input, key) => {
+    if (screen !== 'farming') return;
+
+    if (key.escape) {
+      setScreen('menu');
+      return;
+    }
+
+    if (accounts.length === 0) return;
+
+    if (key.upArrow) {
+      setSelectedAccountIndex((prev) => (prev > 0 ? prev - 1 : accounts.length - 1));
+    } else if (key.downArrow) {
+      setSelectedAccountIndex((prev) => (prev < accounts.length - 1 ? prev + 1 : 0));
+    }
+  });
+
+  // Start orchestrator inside useEffect when screen becomes 'farming'
+  useEffect(() => {
+    if (screen !== 'farming' || config.accounts.length === 0) return;
+
+    const orchestrator = new Orchestrator(config.accounts);
+
+    // Set initial accounts preview
+    setAccounts(
+      config.accounts.map((acc, index) => ({
+        index,
+        tokenPreview: acc.token.slice(0, 12) + '...',
+        username: 'Connecting...',
+        userId: '-',
+        status: 'initializing',
+        quests: [],
+        startedAt: new Date(),
+        completedCount: 0,
+        failedCount: 0,
+        proxy: acc.proxy ? maskProxy(acc.proxy) : 'none',
+      })),
+    );
+
+    const handleUpdate = (updatedAccounts: AccountState[]) => {
+      setAccounts(updatedAccounts);
+    };
+
+    orchestrator.on('update', handleUpdate);
+
+    orchestrator.start().catch(() => {});
+
+    return () => {
+      orchestrator.off('update', handleUpdate);
+      orchestrator.abort();
+    };
+  }, [screen, config]);
+
+  const handleAddTokenSubmit = () => {
+    if (!tokenInput.trim()) {
+      setAddTokenStatus('❌ Token cannot be empty!');
+      return;
+    }
+    try {
+      saveAccount(config.tokensFile, tokenInput.trim(), proxyInput.trim() || undefined);
+
+      // Reload config
+      const newConfig = readConfig();
+      setConfig(newConfig);
+
+      setAddTokenStatus('✔ Account added successfully!');
+
+      // Clear inputs
+      setTokenInput('');
+      setProxyInput('');
+      setActiveInputField('token');
+
+      setTimeout(() => {
+        setScreen('menu');
+      }, 1500);
+    } catch (err) {
+      setAddTokenStatus(`❌ Error: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  // Render different screens
+  if (screen === 'menu') {
+    return (
+      <Box flexDirection="column" padding={1} borderStyle="round" borderColor="cyan">
+        <Box marginBottom={1} flexDirection="column">
+          <Text bold color="cyanBright">
+            🚀 LAZY QUEST AUTO-FARMER
+          </Text>
+          <Text dimColor>Live terminal dashboard for Discord Quests</Text>
+        </Box>
+
+        <Box flexDirection="column" marginBottom={1}>
+          <Text
+            color={selectedMenuIndex === 0 ? 'cyan' : 'white'}
+            bold={selectedMenuIndex === 0}
+          >
+            {selectedMenuIndex === 0 ? ' ▶ ' : '   '}Start Quest Farming (
+            {config.accounts.length} account(s) loaded)
+          </Text>
+          <Text
+            color={selectedMenuIndex === 1 ? 'cyan' : 'white'}
+            bold={selectedMenuIndex === 1}
+          >
+            {selectedMenuIndex === 1 ? ' ▶ ' : '   '}Add Account Token (TUI)
+          </Text>
+          <Text
+            color={selectedMenuIndex === 2 ? 'cyan' : 'white'}
+            bold={selectedMenuIndex === 2}
+          >
+            {selectedMenuIndex === 2 ? ' ▶ ' : '   '}View Loaded Accounts
+          </Text>
+          <Text
+            color={selectedMenuIndex === 3 ? 'cyan' : 'white'}
+            bold={selectedMenuIndex === 3}
+          >
+            {selectedMenuIndex === 3 ? ' ▶ ' : '   '}Exit
+          </Text>
+        </Box>
+
+        <Text dimColor>Use Up/Down Arrow keys to navigate, press Enter to select.</Text>
+      </Box>
+    );
+  }
+
+  if (screen === 'add_token') {
+    return (
+      <Box flexDirection="column" padding={1} borderStyle="round" borderColor="yellow">
+        <Box marginBottom={1}>
+          <Text bold color="yellow">
+            ➕ Add Account Token
+          </Text>
+        </Box>
+
+        <Box flexDirection="column" marginBottom={1}>
+          <Box>
+            <Text bold color={activeInputField === 'token' ? 'cyanBright' : 'gray'}>
+              Discord Token:{' '}
+            </Text>
+            <TextInput
+              value={tokenInput}
+              onChange={setTokenInput}
+              onSubmit={handleAddTokenSubmit}
+              placeholder="Paste Discord token here..."
+              isActive={activeInputField === 'token'}
+              mask={true}
+            />
+          </Box>
+          <Box>
+            <Text bold color={activeInputField === 'proxy' ? 'cyanBright' : 'gray'}>
+              Proxy URL:{' '}
+            </Text>
+            <TextInput
+              value={proxyInput}
+              onChange={setProxyInput}
+              onSubmit={handleAddTokenSubmit}
+              placeholder="e.g. socks5://127.0.0.1:1080 (optional)"
+              isActive={activeInputField === 'proxy'}
+            />
+          </Box>
+        </Box>
+
+        {addTokenStatus && (
+          <Box marginBottom={1}>
+            <Text bold>{addTokenStatus}</Text>
+          </Box>
+        )}
+
+        <Text dimColor>
+          Press Tab or Arrow keys to switch fields • Press Enter to Submit • Press Esc to
+          cancel
+        </Text>
+      </Box>
+    );
+  }
+
+  if (screen === 'view_accounts') {
+    return (
+      <Box flexDirection="column" padding={1} borderStyle="round" borderColor="magenta">
+        <Box marginBottom={1}>
+          <Text bold color="magenta">
+            👤 Loaded Accounts ({config.accounts.length})
+          </Text>
+        </Box>
+
+        <Box flexDirection="column" marginBottom={1}>
+          {config.accounts.map((acc, i) => (
+            <Box key={i} marginLeft={1}>
+              <Text color="cyan">#{i + 1} </Text>
+              <Text bold color="white">
+                {acc.token.slice(0, 16)}...
+              </Text>
+              <Text dimColor> | Proxy: </Text>
+              <Text color={acc.proxy ? 'yellow' : 'gray'}>
+                {acc.proxy ? maskProxy(acc.proxy) : 'none'}
+              </Text>
+            </Box>
+          ))}
+          {config.accounts.length === 0 && (
+            <Text color="red">No accounts loaded! Add a token first.</Text>
+          )}
+        </Box>
+
+        <Text dimColor>Press Esc or Q to return to Menu</Text>
+      </Box>
+    );
+  }
+
+  // Farming Screen
   const elapsedSeconds =
     accounts.length > 0
       ? Math.max(
@@ -267,15 +598,31 @@ export function App({ accounts }: { accounts: AccountState[] }) {
     elapsedSeconds,
   };
 
+  const isFinished = summary.runningAccounts === 0 && accounts.length > 0;
+
   return (
     <Box flexDirection="column" padding={1}>
       <SummaryBanner summary={summary} />
       <Box flexDirection="column" rowGap={0} marginTop={0}>
         {accounts.map((account) => (
-          <AccountCard key={account.index} account={account} />
+          <AccountCard
+            key={account.index}
+            account={account}
+            selected={selectedAccountIndex === account.index}
+          />
         ))}
       </Box>
-      <Footer />
+      <Box marginTop={1} flexDirection="column">
+        {isFinished && (
+          <Text bold color="greenBright">
+            ✔ Quest Farming Completed! All accounts processed.
+          </Text>
+        )}
+        <Text dimColor>
+          Press Esc to return to Menu • Use Up/Down Arrows to select accounts • Press
+          Ctrl+C to Exit
+        </Text>
+      </Box>
     </Box>
   );
 }
