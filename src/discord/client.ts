@@ -12,6 +12,40 @@ import { patchWebSocket, proxyRequest } from '../utils/proxy';
 // Kích hoạt monkey patch WebSocket ngay lập tức để chặn các kết nối của discordjs/ws
 patchWebSocket();
 
+const sessionRegistry = new Map<string, AntiDetectSession>();
+
+let identifyPatched = false;
+function patchIdentify() {
+  if (identifyPatched) return;
+  identifyPatched = true;
+
+  const originalSend = WebSocketShard.prototype.send;
+  WebSocketShard.prototype.send = async function (
+    this: any,
+    payload: GatewaySendPayload,
+  ) {
+    if (payload.op === GatewayOpcodes.Identify) {
+      const token = this.strategy?.options?.token;
+      const session = sessionRegistry.get(token);
+      if (session) {
+        payload.d = {
+          token: payload.d.token,
+          properties: {
+            ...session.profile,
+            is_fast_connect: false,
+            gateway_connect_reasons: 'AppSkeleton',
+          },
+          capabilities: 0,
+          presence: payload.d.presence,
+          compress: payload.d.compress,
+          client_state: { guild_versions: {} },
+        } as any;
+      }
+    }
+    return originalSend.call(this, payload);
+  };
+}
+
 /**
  * Wraps a single Discord user connection with anti-detection.
  * Manages WebSocket lifecycle and REST API calls for quest operations.
@@ -61,25 +95,11 @@ export class DiscordClient {
       });
     };
 
+    // Store session in registry for WebSocketShard lookup
+    sessionRegistry.set(token, this.session);
+
     // Patch identify payload to use our session profile
-    const originalSend = WebSocketShard.prototype.send;
-    WebSocketShard.prototype.send = async (payload: GatewaySendPayload) => {
-      if (payload.op === GatewayOpcodes.Identify) {
-        payload.d = {
-          token: payload.d.token,
-          properties: {
-            ...this.session.profile,
-            is_fast_connect: false,
-            gateway_connect_reasons: 'AppSkeleton',
-          },
-          capabilities: 0,
-          presence: payload.d.presence,
-          compress: payload.d.compress,
-          client_state: { guild_versions: {} },
-        } as any;
-      }
-      return originalSend.call(this, payload);
-    };
+    patchIdentify();
 
     this.client = new Client({ rest: this.rest, gateway: this.gateway });
   }
