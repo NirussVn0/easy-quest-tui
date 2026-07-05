@@ -1,26 +1,30 @@
 {
   "name": "lazy-quest",
-  "version": "1.0.0",
-  "description": "Quest Bot Auto Claim",
-  "main": "src/index.ts",
-  "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "check": "npm run typecheck && npm run lint && npm test",
-    "start": "tsx --env-file=.env src/index.ts",
-    "dev": "tsx src/index.ts",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint .",
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
-  },
-  "keywords": [],
-  "author": "NirussVn0",
-  "license": "GPL-3.0",
+  "version": "2.0.0",
+  "description": "Multi-account Discord Quest Auto-Farmer with anti-detection",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
+  "scripts": {
+    "start": "tsx --env-file=.env src/index.tsx",
+    "dev": "tsx src/index.tsx",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run --passWithNoTests",
+    "check": "npm run typecheck && npm run lint && npm test"
+  },
+  "keywords": [
+    "discord",
+    "quest",
+    "auto-farm",
+    "multi-account"
+  ],
+  "author": "NirussVn0",
+  "license": "GPL-3.0",
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^20.10.0",
@@ -36,10 +40,11 @@
     "@discordjs/core": "^1.1.1",
     "@discordjs/rest": "^2.2.0",
     "@discordjs/ws": "^1.0.2",
-    "chalk": "^4.1.2",
     "discord-api-types": "^0.37.61",
+    "https-proxy-agent": "^9.1.0",
     "ink": "^7.1.0",
     "react": "^19.2.7",
+    "socks-proxy-agent": "^10.1.0",
     "undici": "^6.0.0"
   }
 }

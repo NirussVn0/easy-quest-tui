@@ -1,0 +1,9 @@
+# Discord user tokens — one per line
+# Lines starting with # are ignored
+# Get your token from Discord dev tools (Application > Storage > localStorage > token)
+#
+# IMPORTANT: Keep this file SECRET. Never commit real tokens to git.
+#
+# MTEx...your_first_token_here
+# MjIy...your_second_token_here
+# MzMz...your_third_token_here

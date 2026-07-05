@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es2022",
     "module": "ESNext",
+    "moduleResolution": "Bundler",
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
@@ -9,16 +10,10 @@
     "strict": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "moduleResolution": "Bundler",
     "jsx": "react-jsx",
-    "baseUrl": "./src",
-    "paths": {
-      "@types/*": ["types/*"],
-      "@config/*": ["config/*"],
-      "@services/*": ["services/*"],
-      "@ui/*": ["ui/*"],
-      "@utils/*": ["utils/*"]
-    }
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
   },
   "include": ["src/**/*"],
   "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"]

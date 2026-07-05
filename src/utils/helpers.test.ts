@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { Quest as QuestEntity } from '../services/quest.service';
-import { QuestTaskConfigType, type Quest as QuestShape } from '../types/quest.types';
+import { Quest as QuestEntity } from '../discord/quest-manager';
+import { QuestTaskType, type Quest as QuestShape } from '../types/index';
 import { formatTime, getQuestData } from './helpers';
 
-function createQuest(overrides: Partial<QuestShape> = {}) {
+function createQuest(overrides: Partial<QuestShape> = {}): QuestEntity {
   const quest = {
     id: 'quest_1',
     preview: false,
@@ -14,8 +14,8 @@ function createQuest(overrides: Partial<QuestShape> = {}) {
       completed_at: null,
       claimed_at: null,
       progress: {
-        [QuestTaskConfigType.WATCH_VIDEO]: {
-          event_name: QuestTaskConfigType.WATCH_VIDEO,
+        [QuestTaskType.WATCH_VIDEO]: {
+          event_name: QuestTaskType.WATCH_VIDEO,
           value: 40,
           updated_at: '2026-01-01T00:00:00.000Z',
           completed_at: null,
@@ -54,11 +54,11 @@ function createQuest(overrides: Partial<QuestShape> = {}) {
         type: 1,
         join_operator: 'and',
         tasks: {
-          [QuestTaskConfigType.WATCH_VIDEO]: {
-            event_name: QuestTaskConfigType.WATCH_VIDEO,
+          [QuestTaskType.WATCH_VIDEO]: {
+            event_name: QuestTaskType.WATCH_VIDEO,
             target: 100,
           },
-        } as Record<QuestTaskConfigType, { event_name: string; target: number }>,
+        },
       },
       rewards_config: {
         assignment_method: 1,
@@ -96,9 +96,10 @@ describe('formatTime', () => {
 
 describe('getQuestData', () => {
   it('uses quest metadata and progress to calculate remaining seconds', () => {
-    expect(getQuestData(createQuest())).toEqual({
+    expect(getQuestData(createQuest().raw)).toEqual({
       name: 'Demo Quest',
       remaining: 60,
+      total: 100,
       reward: 'Demo Reward',
     });
   });
@@ -106,19 +107,47 @@ describe('getQuestData', () => {
   it('marks quests without supported tasks as unsupported', () => {
     const quest = createQuest({
       config: {
-        ...createQuest().config,
+        id: 'quest_1',
+        config_version: 1,
+        starts_at: '2026-01-01T00:00:00.000Z',
+        expires_at: '2026-12-31T00:00:00.000Z',
+        features: 0,
+        application: { id: 'app_1', name: 'Demo App', link: 'https://discord.com' },
+        assets: {
+          hero: '',
+          hero_video: null,
+          quest_bar_hero: '',
+          quest_bar_hero_video: null,
+          game_tile: '',
+          logotype: '',
+        },
+        colors: { primary: '#000000', secondary: '#ffffff' },
+        messages: {
+          quest_name: 'Demo Quest',
+          game_title: 'Demo Game',
+          game_publisher: 'Demo Publisher',
+        },
         task_config: {
           type: 1,
           join_operator: 'and',
-          tasks: {} as Record<
-            QuestTaskConfigType,
-            { event_name: string; target: number }
-          >,
+          tasks: {},
+        },
+        rewards_config: {
+          assignment_method: 1,
+          rewards_expire_at: null,
+          platforms: 0,
+          rewards: [
+            {
+              type: 1,
+              sku_id: 'sku_1',
+              messages: { name: 'Demo Reward', name_with_article: 'a Demo Reward' },
+            },
+          ],
         },
       },
     });
 
-    expect(getQuestData(quest).remaining).toBe(-1);
-    expect(getQuestData(quest).reward).toBe('Unsupported');
+    expect(getQuestData(quest.raw).remaining).toBe(-1);
+    expect(getQuestData(quest.raw).reward).toBe('Unsupported');
   });
 });
