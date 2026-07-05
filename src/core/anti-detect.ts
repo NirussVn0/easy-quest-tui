@@ -46,15 +46,30 @@ export function decorateHeaders(
 ): RequestInit {
   const headers = new Headers(init.headers as Record<string, string> | undefined);
 
+  // Sanitize Authorization header: user tokens should NOT have a "Bot " prefix
+  const auth = headers.get('Authorization');
+  if (auth) {
+    if (auth.startsWith('Bot ')) {
+      headers.set('Authorization', auth.slice(4).trim());
+    } else {
+      headers.set('Authorization', auth.trim());
+    }
+  }
+
   headers.set('User-Agent', session.userAgent);
   headers.set('accept-language', session.locale);
   headers.set('x-discord-locale', session.locale);
   headers.set('x-discord-timezone', session.timezone);
 
-  // Randomise whether to include some headers (looks more natural)
-  if (Math.random() > 0.3) {
-    headers.set('origin', 'https://discord.com');
+  const method = init.method?.toUpperCase() || 'GET';
+
+  // Origin header is only sent on state-modifying requests (like POST) in browsers
+  if (method !== 'GET') {
+    if (Math.random() > 0.3) {
+      headers.set('origin', 'https://discord.com');
+    }
   }
+
   if (Math.random() > 0.3) {
     headers.set('referer', 'https://discord.com/channels/@me');
   }
@@ -67,7 +82,13 @@ export function decorateHeaders(
     Buffer.from(JSON.stringify(session.profile)).toString('base64'),
   );
 
-  const secured = { ...init, headers };
+  // Convert Headers instance back to a plain object for maximum compatibility
+  const plainHeaders: Record<string, string> = {};
+  headers.forEach((val, key) => {
+    plainHeaders[key] = val;
+  });
+
+  const secured = { ...init, headers: plainHeaders };
   return secured;
 }
 
