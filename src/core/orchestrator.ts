@@ -78,6 +78,7 @@ export class Orchestrator extends EventEmitter {
 
       // ── Phase 1: Connect ──────────────────────────────────────────────
       account.status = 'connecting';
+      account.errorMessage = undefined;
       this.emitUpdate();
 
       client = new DiscordClient(accConfig.token, accConfig.proxy);
@@ -109,12 +110,14 @@ export class Orchestrator extends EventEmitter {
             isReady = true;
             account.username = data.user.username;
             account.userId = data.user.id;
+            account.errorMessage = undefined;
             resolve();
           },
         );
 
         client!.client.once(GatewayDispatchEvents.Resumed, () => {
           isReady = true;
+          account.errorMessage = undefined;
         });
 
         client!.connect().catch(reject);
@@ -122,6 +125,7 @@ export class Orchestrator extends EventEmitter {
 
       // ── Phase 2: Fetch Quests ─────────────────────────────────────────
       account.status = 'fetching_quests';
+      account.errorMessage = undefined;
       this.emitUpdate();
 
       const manager = client.questManager ?? (await client.fetchQuests());
@@ -129,12 +133,14 @@ export class Orchestrator extends EventEmitter {
 
       if (questsProgress.length === 0) {
         account.status = 'completed';
+        account.errorMessage = undefined;
         this.emitUpdate();
         return;
       }
 
       account.quests = questsProgress.map((qp) => ({ ...qp }));
       account.status = 'farming';
+      account.errorMessage = undefined;
       this.emitUpdate();
 
       // ── Phase 3: Execute Quests Concurrently ──────────────────────────
@@ -175,6 +181,7 @@ export class Orchestrator extends EventEmitter {
 
       // ── Phase 4: Cleanup ──────────────────────────────────────────────
       account.status = 'completed';
+      account.errorMessage = undefined;
       this.emitUpdate();
     } catch (error) {
       account.status = 'error';
