@@ -20,6 +20,7 @@ export interface OrchestratorEvents {
 export class Orchestrator extends EventEmitter {
   private accounts: AccountState[] = [];
   private aborted = false;
+  private activeClients: DiscordClient[] = [];
 
   constructor(private readonly accountsConfig: AccountConfig[]) {
     super();
@@ -55,9 +56,13 @@ export class Orchestrator extends EventEmitter {
     }
   }
 
-  /** Stop all farming activity */
+  /** Stop all farming activity and disconnect active clients */
   abort(): void {
     this.aborted = true;
+    for (const client of this.activeClients) {
+      client.disconnect().catch(() => {});
+    }
+    this.activeClients = [];
   }
 
   private async farmAccount(index: number): Promise<void> {
@@ -65,6 +70,7 @@ export class Orchestrator extends EventEmitter {
 
     const account = this.accounts[index]!;
     const accConfig = this.accountsConfig[index]!;
+    let client: DiscordClient | undefined;
 
     try {
       // Stagger startup to avoid mass-connect detection
@@ -74,7 +80,8 @@ export class Orchestrator extends EventEmitter {
       account.status = 'connecting';
       this.emitUpdate();
 
-      const client = new DiscordClient(accConfig.token, accConfig.proxy);
+      client = new DiscordClient(accConfig.token, accConfig.proxy);
+      this.activeClients.push(client);
       let isReady = false;
 
       client.gateway.on('error', ({ error }) => {
@@ -95,7 +102,7 @@ export class Orchestrator extends EventEmitter {
       await new Promise<void>((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error('Gateway timeout')), 30_000);
 
-        client.client.once(
+        client!.client.once(
           GatewayDispatchEvents.Ready,
           ({ data }: { data: { user: { username: string; id: string } } }) => {
             clearTimeout(timeout);
@@ -106,11 +113,11 @@ export class Orchestrator extends EventEmitter {
           },
         );
 
-        client.client.once(GatewayDispatchEvents.Resumed, () => {
+        client!.client.once(GatewayDispatchEvents.Resumed, () => {
           isReady = true;
         });
 
-        client.connect().catch(reject);
+        client!.connect().catch(reject);
       });
 
       // ── Phase 2: Fetch Quests ─────────────────────────────────────────
@@ -123,7 +130,6 @@ export class Orchestrator extends EventEmitter {
       if (questsProgress.length === 0) {
         account.status = 'completed';
         this.emitUpdate();
-        await client.disconnect();
         return;
       }
 
@@ -148,6 +154,7 @@ export class Orchestrator extends EventEmitter {
             qp.remaining = remaining;
             this.emitUpdate();
           },
+          isAborted: () => this.aborted,
         });
 
         if (result === 'completed') {
@@ -168,12 +175,16 @@ export class Orchestrator extends EventEmitter {
 
       // ── Phase 4: Cleanup ──────────────────────────────────────────────
       account.status = 'completed';
-      await client.disconnect();
       this.emitUpdate();
     } catch (error) {
       account.status = 'error';
       account.errorMessage = error instanceof Error ? error.message : String(error);
       this.emitUpdate();
+    } finally {
+      if (client) {
+        this.activeClients = this.activeClients.filter((c) => c !== client);
+        await client.disconnect().catch(() => {});
+      }
     }
   }
 

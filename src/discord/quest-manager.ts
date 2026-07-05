@@ -130,6 +130,7 @@ interface ExecutorDeps {
   rest: REST;
   quest: Quest;
   onProgress?: (remaining: number) => void;
+  isAborted?: () => boolean;
 }
 
 /**
@@ -137,17 +138,17 @@ interface ExecutorDeps {
  * Each step includes anti-detection randomisation.
  */
 export async function executeQuest(deps: ExecutorDeps): Promise<QuestResult> {
-  const { rest, quest, onProgress } = deps;
+  const { rest, quest, isAborted } = deps;
 
   try {
     // 1. Enroll if not already enrolled
     if (!quest.isEnrolled()) {
+      if (isAborted?.()) return 'error';
       await enrollQuest(rest, quest.id);
     }
 
     // 2. Detect task type
-    const taskConfig = (quest.config?.task_config ??
-      (quest.config as any)?.task_config_v2) as
+    const taskConfig = (quest.config?.task_config ?? (quest.config as any)?.task_config_v2) as
       | { tasks?: Partial<Record<QuestTaskType, QuestTask>> }
       | undefined;
 
@@ -162,11 +163,11 @@ export async function executeQuest(deps: ExecutorDeps): Promise<QuestResult> {
     switch (taskType) {
       case 'WATCH_VIDEO':
       case 'WATCH_VIDEO_ON_MOBILE':
-        return executeWatchTask(rest, quest, target, taskType, onProgress);
+        return executeWatchTask(deps, target, taskType);
       case 'PLAY_ON_DESKTOP':
       case 'STREAM_ON_DESKTOP':
       case 'PLAY_ACTIVITY':
-        return executeHeartbeatTask(rest, quest, taskType, onProgress);
+        return executeHeartbeatTask(deps, taskType);
       default:
         return 'unsupported';
     }
@@ -178,17 +179,17 @@ export async function executeQuest(deps: ExecutorDeps): Promise<QuestResult> {
 // ─── Task Implementations ─────────────────────────────────────────────────────
 
 async function executeWatchTask(
-  rest: REST,
-  quest: Quest,
+  deps: ExecutorDeps,
   secondsNeeded: number,
   taskType: QuestTaskType,
-  onProgress?: (remaining: number) => void,
 ): Promise<QuestResult> {
+  const { rest, quest, onProgress, isAborted } = deps;
   const progress = quest.userStatus?.progress?.[taskType]?.value ?? 0;
   let secondsDone = progress;
 
   // Natural pacing: vary speed per tick
   while (secondsDone < secondsNeeded) {
+    if (isAborted?.()) return 'error';
     // Speed varies 4-9 per tick to look human
     const speed = randInt(4, 9);
 
@@ -213,6 +214,7 @@ async function executeWatchTask(
 
   // Final completion tick
   if (secondsDone < secondsNeeded) {
+    if (isAborted?.()) return 'error';
     await rest.post(`/quests/${quest.id}/video-progress`, {
       body: { timestamp: secondsNeeded },
     });
@@ -223,15 +225,15 @@ async function executeWatchTask(
 }
 
 async function executeHeartbeatTask(
-  rest: REST,
-  quest: Quest,
+  deps: ExecutorDeps,
   taskType: QuestTaskType,
-  onProgress?: (remaining: number) => void,
 ): Promise<QuestResult> {
+  const { rest, quest, onProgress, isAborted } = deps;
   // Heartbeat interval varies by task type + jitter
   const baseInterval = taskType === 'PLAY_ON_DESKTOP' ? 30 : 20;
 
   while (!quest.isCompleted()) {
+    if (isAborted?.()) return 'error';
     const body: Record<string, unknown> = { terminal: false };
     if (taskType === 'STREAM_ON_DESKTOP' || taskType === 'PLAY_ACTIVITY') {
       body.stream_key = 'call:0:1';
@@ -248,6 +250,7 @@ async function executeHeartbeatTask(
   }
 
   // Terminal heartbeat
+  if (isAborted?.()) return 'error';
   const terminalBody: Record<string, unknown> = { terminal: true };
   if (taskType === 'STREAM_ON_DESKTOP' || taskType === 'PLAY_ACTIVITY') {
     terminalBody.stream_key = 'call:0:1';
