@@ -14,7 +14,7 @@ async function main(): Promise<number> {
   console.error(`\n  🚀 Lazy Quest — ${config.accounts.length} account(s) loaded\n`);
 
   // 2. Start Ink TUI immediately
-  const { waitUntilExit, clear } = render(<App accounts={[]} />);
+  const { rerender, waitUntilExit, clear } = render(<App accounts={[]} />);
 
   // 3. Create orchestrator and wire up UI updates
   const orchestrator = new Orchestrator(config.accounts);
@@ -24,7 +24,7 @@ async function main(): Promise<number> {
   orchestrator.on('update', (accounts) => {
     accountsRef.current = accounts;
     clear();
-    render(<App accounts={accounts} />);
+    rerender(<App accounts={accounts} />);
   });
 
   // 4. Run orchestrator (concurrent multi-account farming)
@@ -32,7 +32,7 @@ async function main(): Promise<number> {
 
   // 5. Final render with results
   clear();
-  render(<App accounts={accountsRef.current} />);
+  rerender(<App accounts={accountsRef.current} />);
 
   // Let user read final output
   await new Promise((resolve) => setTimeout(resolve, 2000));
