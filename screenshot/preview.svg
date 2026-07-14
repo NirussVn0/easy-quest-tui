@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#111827"/>
+      <stop offset="1" stop-color="#020617"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#000" flood-opacity=".45"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1080" cy="80" r="180" fill="#06b6d4" opacity=".08"/>
+  <circle cx="90" cy="570" r="220" fill="#8b5cf6" opacity=".08"/>
+  <g filter="url(#shadow)">
+    <rect x="90" y="70" width="1020" height="490" rx="18" fill="#0b1020" stroke="#334155" stroke-width="2"/>
+    <path d="M90 122h1020" stroke="#334155" stroke-width="2"/>
+    <circle cx="125" cy="96" r="8" fill="#fb7185"/>
+    <circle cx="153" cy="96" r="8" fill="#fbbf24"/>
+    <circle cx="181" cy="96" r="8" fill="#4ade80"/>
+    <text x="600" y="103" text-anchor="middle" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="16">easy-quest — terminal</text>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="21">
+    <text x="145" y="174" fill="#67e8f9" font-weight="700">╭────────────────────────────────────────────────────────────────────╮</text>
+    <text x="145" y="212" fill="#67e8f9">│</text><text x="190" y="212" fill="#f8fafc" font-weight="700">🚀 EASY QUEST TUI</text><text x="1040" y="212" fill="#67e8f9">│</text>
+    <text x="145" y="248" fill="#67e8f9">│</text><text x="190" y="248" fill="#94a3b8">Live terminal dashboard for Discord Quests</text><text x="1040" y="248" fill="#67e8f9">│</text>
+    <text x="145" y="292" fill="#67e8f9">│</text><text x="190" y="292" fill="#22d3ee" font-weight="700">▶ Start Quest Farming</text><text x="455" y="292" fill="#64748b">(0 accounts loaded)</text><text x="1040" y="292" fill="#67e8f9">│</text>
+    <text x="145" y="330" fill="#67e8f9">│</text><text x="215" y="330" fill="#e2e8f0">Add Account Token (TUI)</text><text x="1040" y="330" fill="#67e8f9">│</text>
+    <text x="145" y="368" fill="#67e8f9">│</text><text x="215" y="368" fill="#e2e8f0">View Loaded Accounts</text><text x="1040" y="368" fill="#67e8f9">│</text>
+    <text x="145" y="406" fill="#67e8f9">│</text><text x="215" y="406" fill="#e2e8f0">Exit</text><text x="1040" y="406" fill="#67e8f9">│</text>
+    <text x="145" y="458" fill="#67e8f9">│</text><text x="190" y="458" fill="#94a3b8">Use ↑/↓ to navigate, press Enter to select.</text><text x="1040" y="458" fill="#67e8f9">│</text>
+    <text x="145" y="504" fill="#67e8f9" font-weight="700">╰────────────────────────────────────────────────────────────────────╯</text>
+  </g>
+</svg>
