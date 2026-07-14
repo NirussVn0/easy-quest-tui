@@ -9,7 +9,7 @@ license=('GPL-3.0-only')
 depends=('nodejs')
 makedepends=('npm')
 source=("${pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('SKIP') # Replace with the release tarball checksum before AUR submission.
+sha256sums=('21768c9e8435036bb1d00a2296119b7d994e4e25309e31824bb446b01a49fa35')
 
 build() {
   cd "${pkgname}-${pkgver}"
