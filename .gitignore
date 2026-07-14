@@ -54,6 +54,9 @@ web_modules/
 # Optional eslint cache
 .eslintcache
 
+# Local OpenCode session state
+.opencode/
+
 # Optional stylelint cache
 .stylelintcache
 
