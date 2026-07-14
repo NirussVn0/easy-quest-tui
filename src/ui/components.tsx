@@ -197,7 +197,7 @@ function SummaryBanner({ summary }: { summary: FarmSummary }) {
       <Box justifyContent="space-between">
         <Box>
           <Text bold color="cyanBright">
-            Lazy Quest Farm
+            Easy Quest TUI
           </Text>
           <Text dimColor> • Multi-Account • Anti-Detect</Text>
         </Box>
@@ -453,7 +453,7 @@ export function App() {
       <Box flexDirection="column" padding={1} borderStyle="round" borderColor="cyan">
         <Box marginBottom={1} flexDirection="column">
           <Text bold color="cyanBright">
-            🚀 LAZY QUEST AUTO-FARMER
+            🚀 EASY QUEST TUI
           </Text>
           <Text dimColor>Live terminal dashboard for Discord Quests</Text>
         </Box>

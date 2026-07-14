@@ -1,21 +1,39 @@
 {
-  "name": "lazy-quest",
+  "name": "easy-quest-tui",
   "version": "2.0.0",
   "description": "Multi-account Discord Quest Auto-Farmer with anti-detection",
   "type": "module",
   "engines": {
     "node": ">=18"
   },
+  "bin": {
+    "easy-quest": "dist/easy-quest.js"
+  },
+  "files": [
+    "dist/",
+    ".env.example",
+    "tokens.txt.example"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NirussVn0/easy-quest-tui.git"
+  },
+  "homepage": "https://github.com/NirussVn0/easy-quest-tui#readme",
+  "bugs": {
+    "url": "https://github.com/NirussVn0/easy-quest-tui/issues"
+  },
   "scripts": {
     "start": "tsx --env-file=.env src/index.tsx",
     "dev": "tsx src/index.tsx",
-    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('node:fs').rmSync('dist', {recursive:true, force:true})\"",
+    "build": "npm run clean && npm run typecheck && esbuild src/index.tsx --bundle --platform=node --format=esm --packages=external --outfile=dist/easy-quest.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run --passWithNoTests",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "prepack": "npm run build"
   },
   "keywords": [
     "discord",
@@ -29,6 +47,7 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^20.10.0",
     "@types/react": "^19.2.17",
+    "esbuild": "^0.28.1",
     "eslint": "^10.5.0",
     "prettier": "^3.8.4",
     "tsx": "^4.22.3",
