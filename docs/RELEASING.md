@@ -9,10 +9,10 @@
 
 ## 2. Windows installation
 
-Install Node.js 18 or newer, then run this in PowerShell:
+Install Node.js 22 or newer, then run this in PowerShell:
 
 ```powershell
-npm install --global https://github.com/NirussVn0/easy-quest-tui/releases/download/v2.0.0/easy-quest-tui-2.0.0.tgz
+npm install --global https://github.com/NirussVn0/easy-quest-tui/releases/download/v2.0.1/easy-quest-tui-2.0.1.tgz
 easy-quest
 ```
 

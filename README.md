@@ -3,7 +3,7 @@
 # 🚀 Easy Quest TUI
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![Ink](https://img.shields.io/badge/Ink-React%20TUI-06B6D4?style=for-the-badge&logo=react&logoColor=white)](https://github.com/vadimdemedes/ink)
 [![CI](https://img.shields.io/github/actions/workflow/status/NirussVn0/easy-quest-tui/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/NirussVn0/easy-quest-tui/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-GPL--3.0-F59E0B?style=for-the-badge)](./LICENSE)
@@ -73,10 +73,10 @@ Also supported: `TOKENS`/`PROXIES` comma-separated lists, legacy `TOKEN`/`PROXY`
 
 ### Windows
 
-Install [Node.js 18+](https://nodejs.org/), then install the release tarball from PowerShell:
+Install [Node.js 22+](https://nodejs.org/), then install the release tarball from PowerShell:
 
 ```powershell
-npm install --global https://github.com/NirussVn0/easy-quest-tui/releases/download/v2.0.0/easy-quest-tui-2.0.0.tgz
+npm install --global https://github.com/NirussVn0/easy-quest-tui/releases/download/v2.0.1/easy-quest-tui-2.0.1.tgz
 easy-quest
 ```
 
@@ -114,7 +114,7 @@ src/
 
 ## 🚢 Release
 
-Pushes and pull requests to `main` run CI on Node.js 18, 20, and 22. A `v*` tag runs the
+Pushes and pull requests to `main` run CI on Node.js 22 and 24. A `v*` tag runs the
 release workflow and attaches an installable npm tarball to a GitHub release.
 
 For versioning, Windows distribution, and AUR submission steps, read

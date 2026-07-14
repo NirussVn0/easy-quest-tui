@@ -1,6 +1,6 @@
 # Maintainer: NirussVn0 <nirusssimple.vn@gmail.com>
 pkgname=easy-quest-tui
-pkgver=2.0.0
+pkgver=2.0.1
 pkgrel=1
 pkgdesc='Interactive terminal dashboard for Discord Quest progress'
 arch=('any')
