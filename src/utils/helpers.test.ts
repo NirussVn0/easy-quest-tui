@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Quest as QuestEntity } from '../discord/quest-manager';
 import { QuestTaskType, type Quest as QuestShape } from '../types/index';
-import { formatTime, getQuestData } from './helpers';
+import { formatTime, getProgressPercentage, getQuestData } from './helpers';
 
 function createQuest(overrides: Partial<QuestShape> = {}): QuestEntity {
   const quest = {
@@ -91,6 +91,14 @@ describe('formatTime', () => {
   it('formats hours, minutes, and seconds', () => {
     expect(formatTime(3661)).toBe('1h 1m 1s');
     expect(formatTime(61)).toBe('1m 1s');
+  });
+});
+
+describe('getProgressPercentage', () => {
+  it('calculates and clamps percentage from remaining progress', () => {
+    expect(getProgressPercentage(60, 120)).toBe(50);
+    expect(getProgressPercentage(0, 120)).toBe(100);
+    expect(getProgressPercentage(150, 120)).toBe(0);
   });
 });
 

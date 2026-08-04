@@ -18,6 +18,11 @@ export function formatTime(seconds: number): string {
   return parts.join(' ');
 }
 
+export function getProgressPercentage(remaining: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((1 - remaining / total) * 100)));
+}
+
 /**
  * Truncate a token for display purposes.
  * Shows first 12 chars + "..."

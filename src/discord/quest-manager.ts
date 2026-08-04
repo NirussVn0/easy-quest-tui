@@ -177,7 +177,7 @@ async function executeQuestSteps(deps: ExecutorDeps): Promise<QuestResult> {
       case 'PLAY_ON_DESKTOP':
       case 'STREAM_ON_DESKTOP':
       case 'PLAY_ACTIVITY':
-        return executeHeartbeatTask(deps, taskType);
+        return executeHeartbeatTask(deps, taskType, target);
       default:
         return 'unsupported';
     }
@@ -237,6 +237,7 @@ async function executeWatchTask(
 async function executeHeartbeatTask(
   deps: ExecutorDeps,
   taskType: QuestTaskType,
+  secondsNeeded: number,
 ): Promise<QuestResult> {
   const { rest, quest, onProgress, isAborted } = deps;
   // Heartbeat interval varies by task type + jitter
@@ -253,7 +254,8 @@ async function executeHeartbeatTask(
 
     const res = await rest.post(`/quests/${quest.id}/heartbeat`, { body });
     quest.updateUserStatus(res as QuestUserStatus);
-    onProgress?.(0);
+    const secondsDone = quest.userStatus?.progress?.[taskType]?.value ?? 0;
+    onProgress?.(Math.max(0, secondsNeeded - secondsDone));
 
     if (quest.isCompleted()) break;
     await heartbeatSleep(baseInterval);

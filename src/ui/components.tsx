@@ -7,7 +7,7 @@ import type {
   QuestStatus,
   AccountStatus,
 } from '../types/index';
-import { formatTime, maskProxy } from '../utils/helpers';
+import { formatTime, getProgressPercentage, maskProxy } from '../utils/helpers';
 import { readConfig, saveAccount } from '../config/env';
 import { Orchestrator } from '../core/orchestrator';
 
@@ -60,16 +60,15 @@ const BAR_WIDTH = 20;
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   if (total <= 0) return null;
-  const filled = Math.max(
-    0,
-    Math.min(BAR_WIDTH, Math.round((1 - current / total) * BAR_WIDTH)),
-  );
+  const percentage = getProgressPercentage(current, total);
+  const filled = Math.round((percentage / 100) * BAR_WIDTH);
   const empty = BAR_WIDTH - filled;
 
   return (
     <Box>
       <Text color="cyan">{'█'.repeat(filled)}</Text>
       <Text color="gray">{'░'.repeat(empty)}</Text>
+      <Text color="cyanBright"> {percentage}%</Text>
     </Box>
   );
 }
