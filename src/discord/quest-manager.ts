@@ -131,6 +131,7 @@ interface ExecutorDeps {
   quest: Quest;
   onProgress?: (remaining: number) => void;
   isAborted?: () => boolean;
+  questTimeoutMs?: number;
 }
 
 /**
@@ -138,6 +139,14 @@ interface ExecutorDeps {
  * Each step includes anti-detection randomisation.
  */
 export async function executeQuest(deps: ExecutorDeps): Promise<QuestResult> {
+  const deadline = Date.now() + (deps.questTimeoutMs ?? 30 * 60_000);
+  return executeQuestSteps({
+    ...deps,
+    isAborted: () => Boolean(deps.isAborted?.()) || Date.now() >= deadline,
+  });
+}
+
+async function executeQuestSteps(deps: ExecutorDeps): Promise<QuestResult> {
   const { rest, quest, isAborted } = deps;
 
   try {

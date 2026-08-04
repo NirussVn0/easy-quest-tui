@@ -6,6 +6,14 @@ import { DiscordClient } from '../discord/client';
 import { executeQuest } from '../discord/quest-manager';
 import { maskToken, maskProxy } from '../utils/helpers';
 import { startupStagger } from './anti-detect';
+import { runWithConcurrency, withTimeout } from '../utils/async';
+
+interface OrchestratorOptions {
+  concurrency?: number;
+  requestTimeoutMs?: number;
+  gatewayTimeoutMs?: number;
+  questTimeoutMs?: number;
+}
 
 export interface OrchestratorEvents {
   update: (accounts: AccountState[]) => void;
@@ -22,8 +30,20 @@ export class Orchestrator extends EventEmitter {
   private aborted = false;
   private activeClients: DiscordClient[] = [];
 
-  constructor(private readonly accountsConfig: AccountConfig[]) {
+  private readonly concurrency: number;
+  private readonly requestTimeoutMs: number;
+  private readonly gatewayTimeoutMs: number;
+  private readonly questTimeoutMs: number;
+
+  constructor(
+    private readonly accountsConfig: AccountConfig[],
+    options: OrchestratorOptions = {},
+  ) {
     super();
+    this.concurrency = Math.max(1, Math.trunc(options.concurrency ?? 3));
+    this.requestTimeoutMs = options.requestTimeoutMs ?? 30_000;
+    this.gatewayTimeoutMs = options.gatewayTimeoutMs ?? 90_000;
+    this.questTimeoutMs = options.questTimeoutMs ?? 30 * 60_000;
   }
 
   /** Total number of accounts being farmed */
@@ -81,7 +101,7 @@ export class Orchestrator extends EventEmitter {
       account.errorMessage = undefined;
       this.emitUpdate();
 
-      client = new DiscordClient(accConfig.token, accConfig.proxy);
+      client = new DiscordClient(accConfig.token, accConfig.proxy, this.requestTimeoutMs);
       this.activeClients.push(client);
       let isReady = false;
 
@@ -101,7 +121,10 @@ export class Orchestrator extends EventEmitter {
 
       // Wait for Ready event
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Gateway timeout')), 30_000);
+        const timeout = setTimeout(
+          () => reject(new Error('Gateway timeout')),
+          this.gatewayTimeoutMs,
+        );
 
         client!.client.once(
           GatewayDispatchEvents.Ready,
@@ -128,7 +151,13 @@ export class Orchestrator extends EventEmitter {
       account.errorMessage = undefined;
       this.emitUpdate();
 
-      const manager = client.questManager ?? (await client.fetchQuests());
+      const manager =
+        client.questManager ??
+        (await withTimeout(
+          client.fetchQuests(),
+          this.requestTimeoutMs,
+          'Fetching quests timed out',
+        ));
       const questsProgress = manager.getValidProgress();
 
       if (questsProgress.length === 0) {
@@ -144,18 +173,21 @@ export class Orchestrator extends EventEmitter {
       this.emitUpdate();
 
       // ── Phase 3: Execute Quests Concurrently ──────────────────────────
-      for (const qp of account.quests) {
-        if (this.aborted) break;
+      const rest = client.rest;
+      const questTasks = account.quests.map((qp) => async () => {
+        if (this.aborted) return;
 
         const quest = manager.get(qp.id);
-        if (!quest) continue;
+        if (!quest) return;
 
         qp.status = 'running';
+        qp.errorMessage = undefined;
         this.emitUpdate();
 
         const result = await executeQuest({
-          rest: client.rest,
+          rest,
           quest,
+          questTimeoutMs: this.questTimeoutMs,
           onProgress: (remaining) => {
             qp.remaining = remaining;
             this.emitUpdate();
@@ -173,11 +205,24 @@ export class Orchestrator extends EventEmitter {
           account.failedCount++;
         } else {
           qp.status = 'error';
-          qp.errorMessage = 'Execution failed';
+          qp.errorMessage = 'Execution failed or timed out';
           account.failedCount++;
         }
         this.emitUpdate();
-      }
+      });
+
+      const questResults = await runWithConcurrency(questTasks, this.concurrency);
+      questResults.forEach((result, questIndex) => {
+        if (!(result instanceof Error)) return;
+
+        const qp = account.quests[questIndex];
+        if (!qp || qp.status !== 'running') return;
+
+        qp.status = 'error';
+        qp.errorMessage = result.message;
+        account.failedCount++;
+      });
+      this.emitUpdate();
 
       // ── Phase 4: Cleanup ──────────────────────────────────────────────
       account.status = 'completed';
@@ -190,7 +235,9 @@ export class Orchestrator extends EventEmitter {
     } finally {
       if (client) {
         this.activeClients = this.activeClients.filter((c) => c !== client);
-        await client.disconnect().catch(() => {});
+        await withTimeout(client.disconnect(), 5_000, 'Disconnect timed out').catch(
+          () => {},
+        );
       }
     }
   }

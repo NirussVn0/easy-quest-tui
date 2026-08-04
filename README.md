@@ -64,7 +64,16 @@ TOKEN_1=token-for-account-1
 PROXY_1=http://user:password@host:port
 TOKEN_2=token-for-account-2
 CONCURRENCY=3
+REQUEST_TIMEOUT_SECONDS=30
+GATEWAY_TIMEOUT_SECONDS=90
+QUEST_TIMEOUT_MINUTES=30
 ```
+
+`CONCURRENCY` is applied independently to each account. For example, `CONCURRENCY=3`
+lets every account process up to three quests at once; a failed or timed-out quest does not
+stop the other quests or accounts. Request and quest deadlines prevent a stalled network call
+from leaving the TUI waiting indefinitely. Gateway startup has a separate, longer timeout so a
+slow proxy does not fail just because REST requests use a short deadline.
 
 Also supported: `TOKENS`/`PROXIES` comma-separated lists, legacy `TOKEN`/`PROXY`, and
 `TOKENS_FILE` for a custom token-file path. See [`.env.example`](./.env.example).

@@ -60,6 +60,7 @@ export class DiscordClient {
   constructor(
     public readonly token: string,
     public readonly proxy?: string,
+    requestTimeoutMs = 30_000,
   ) {
     this.session = createSession();
 
@@ -72,7 +73,11 @@ export class DiscordClient {
       return DefaultRestOptions.makeRequest(url, secured);
     };
 
-    this.rest = new REST({ version: '10', makeRequest }).setToken(token);
+    this.rest = new REST({
+      version: '10',
+      makeRequest,
+      timeout: requestTimeoutMs,
+    }).setToken(token);
     this.gateway = new WebSocketManager({ token, intents: 0, rest: this.rest });
 
     // Override gateway info fetch to force a specific gateway URL & embed proxy if present

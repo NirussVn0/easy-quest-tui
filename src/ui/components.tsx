@@ -303,7 +303,14 @@ export function App() {
     try {
       return readConfig();
     } catch {
-      return { accounts: [], concurrency: 3, tokensFile: 'tokens.txt' };
+      return {
+        accounts: [],
+        concurrency: 3,
+        requestTimeoutMs: 30_000,
+        gatewayTimeoutMs: 90_000,
+        questTimeoutMs: 30 * 60_000,
+        tokensFile: 'tokens.txt',
+      };
     }
   });
   const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
@@ -388,7 +395,12 @@ export function App() {
   useEffect(() => {
     if (screen !== 'farming' || config.accounts.length === 0) return;
 
-    const orchestrator = new Orchestrator(config.accounts);
+    const orchestrator = new Orchestrator(config.accounts, {
+      concurrency: config.concurrency,
+      requestTimeoutMs: config.requestTimeoutMs,
+      gatewayTimeoutMs: config.gatewayTimeoutMs,
+      questTimeoutMs: config.questTimeoutMs,
+    });
 
     // Set initial accounts preview
     setAccounts(

@@ -11,6 +11,12 @@ export interface AppConfig {
   accounts: AccountConfig[];
   /** Concurrency limit for quest operations per account */
   concurrency: number;
+  /** Maximum time allowed for one network request */
+  requestTimeoutMs: number;
+  /** Maximum time allowed for the Discord Gateway Ready event */
+  gatewayTimeoutMs: number;
+  /** Maximum time allowed for one quest before it is marked failed */
+  questTimeoutMs: number;
   /** Path to tokens file (one token per line) */
   tokensFile: string;
 }
@@ -120,10 +126,19 @@ export function readConfig(): AppConfig {
   }
 
   const concurrency = Math.min(Math.max(Number(process.env.CONCURRENCY) || 3, 1), 10);
+  const requestTimeoutMs =
+    Math.min(Math.max(Number(process.env.REQUEST_TIMEOUT_SECONDS) || 30, 5), 300) * 1000;
+  const gatewayTimeoutMs =
+    Math.min(Math.max(Number(process.env.GATEWAY_TIMEOUT_SECONDS) || 90, 30), 300) * 1000;
+  const questTimeoutMs =
+    Math.min(Math.max(Number(process.env.QUEST_TIMEOUT_MINUTES) || 30, 1), 180) * 60_000;
 
   return {
     accounts: uniqueAccounts,
     concurrency,
+    requestTimeoutMs,
+    gatewayTimeoutMs,
+    questTimeoutMs,
     tokensFile,
   };
 }
