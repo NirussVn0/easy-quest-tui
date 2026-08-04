@@ -13,6 +13,8 @@ export interface Quest {
   user_status: QuestUserStatus | null;
   targeted_content: number;
   preview: boolean;
+  traffic_metadata_raw?: string;
+  traffic_metadata_sealed?: string;
 }
 
 export interface QuestConfig {

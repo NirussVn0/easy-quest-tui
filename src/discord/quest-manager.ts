@@ -150,13 +150,7 @@ async function executeQuestSteps(deps: ExecutorDeps): Promise<QuestResult> {
   const { rest, quest, isAborted } = deps;
 
   try {
-    // 1. Enroll if not already enrolled
-    if (!quest.isEnrolled()) {
-      if (isAborted?.()) return 'error';
-      await enrollQuest(rest, quest.id);
-    }
-
-    // 2. Detect task type
+    // 1. Detect task type before enrollment so mobile-only quests use Android context.
     const taskConfig = (quest.config?.task_config ??
       (quest.config as any)?.task_config_v2) as
       | { tasks?: Partial<Record<QuestTaskType, QuestTask>> }
@@ -165,6 +159,12 @@ async function executeQuestSteps(deps: ExecutorDeps): Promise<QuestResult> {
     const taskType = findSupportedTask(taskConfig?.tasks);
     if (!taskType || !taskConfig?.tasks?.[taskType]) {
       return 'unsupported';
+    }
+
+    // 2. Enroll if not already enrolled
+    if (!quest.isEnrolled()) {
+      if (isAborted?.()) return 'error';
+      await enrollQuest(rest, quest, taskType === 'WATCH_VIDEO_ON_MOBILE');
     }
 
     const target = taskConfig.tasks[taskType]!.target;
@@ -275,9 +275,18 @@ async function executeHeartbeatTask(
 
 // ─── Enrollment ───────────────────────────────────────────────────────────────
 
-async function enrollQuest(rest: REST, questId: string): Promise<void> {
+async function enrollQuest(rest: REST, quest: Quest, isAndroid: boolean): Promise<void> {
   await sleep(randInt(500, 2000)); // Random delay before enrolling
-  await rest.post(`/quests/${questId}/enroll`, {
-    body: { location: 11, is_targeted: false, metadata_raw: null },
-  });
+  const status = (await rest.post(`/quests/${quest.id}/enroll`, {
+    body: {
+      location: isAndroid ? 12 : 11,
+      is_targeted: false,
+      metadata_raw: null,
+      metadata_sealed: null,
+      traffic_metadata_raw: quest.raw.traffic_metadata_raw,
+      traffic_metadata_sealed: quest.raw.traffic_metadata_sealed,
+    },
+    headers: isAndroid ? { AndroidRequest: 'true' } : undefined,
+  })) as QuestUserStatus;
+  quest.updateUserStatus(status);
 }
